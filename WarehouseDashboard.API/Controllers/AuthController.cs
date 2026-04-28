@@ -85,7 +85,7 @@ namespace WarehouseDashboard.API.Controllers
             };
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                _config.GetSection("AppSettings:Token").Value ?? "very_secret_key_that_is_at_least_32_chars_long"));
+                _config.GetSection("AppSettings:Token").Value ?? "default_backup_key_for_local_dev_only_that_is_extremely_long_and_secure_64_chars_plus"));
 
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
 
