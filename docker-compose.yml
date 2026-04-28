@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: ./WarehouseDashboard.API
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./WarehouseDashboard.API/data:/app/data
+
+  ui:
+    build:
+      context: ./WarehouseDashboard.UI
+    ports:
+      - "4200:80"
+    depends_on:
+      - api

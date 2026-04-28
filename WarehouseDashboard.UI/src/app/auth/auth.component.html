@@ -1,0 +1,35 @@
+<div class="auth-container">
+  <div class="glass-card">
+    <div class="auth-header">
+      <mat-icon class="logo-icon">inventory_2</mat-icon>
+      <h2>{{ isLogin ? 'Welcome Back' : 'Join STK-TRACK' }}</h2>
+      <p>{{ isLogin ? 'Login to manage your warehouse' : 'Create an account to start tracking' }}</p>
+    </div>
+
+    <form (submit)="onSubmit()">
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Username</mat-label>
+        <input matInput [(ngModel)]="user.username" name="username" required>
+        <mat-icon matSuffix>person</mat-icon>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Password</mat-label>
+        <input matInput [type]="hide ? 'password' : 'text'" [(ngModel)]="user.password" name="password" required>
+        <button mat-icon-button matSuffix (click)="hide = !hide" [attr.aria-label]="'Hide password'" [attr.aria-pressed]="hide">
+          <mat-icon>{{hide ? 'visibility_off' : 'visibility'}}</mat-icon>
+        </button>
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" class="auth-button" type="submit">
+        {{ isLogin ? 'Sign In' : 'Create Account' }}
+      </button>
+    </form>
+
+    <div class="auth-footer">
+      <p>{{ isLogin ? "Don't have an account?" : "Already have an account?" }} 
+        <a (click)="isLogin = !isLogin">{{ isLogin ? 'Sign Up' : 'Log In' }}</a>
+      </p>
+    </div>
+  </div>
+</div>

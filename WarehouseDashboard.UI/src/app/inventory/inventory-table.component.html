@@ -1,0 +1,214 @@
+<div class="dashboard-wrapper">
+  <div class="sidebar">
+    <div class="logo">
+      <mat-icon>inventory_2</mat-icon>
+      <span>STK-TRACK</span>
+    </div>
+    
+    <div class="user-profile">
+      <div class="avatar">{{authService.getUsername()?.charAt(0)}}</div>
+      <div class="user-info">
+        <span class="name">{{authService.getUsername()}}</span>
+        <span class="role">Warehouse Admin</span>
+      </div>
+    </div>
+
+    <nav>
+      <a [class.active]="viewMode === 'inventory'" (click)="viewMode = 'inventory'"><mat-icon>dashboard</mat-icon> Inventory</a>
+      <a [class.active]="viewMode === 'orders'" (click)="viewMode = 'orders'"><mat-icon>history</mat-icon> Orders</a>
+      <a [class.active]="viewMode === 'settings'" (click)="viewMode = 'settings'"><mat-icon>settings</mat-icon> Settings</a>
+      <div class="nav-spacer"></div>
+      <a (click)="logout()" class="logout-link"><mat-icon>logout</mat-icon> Logout</a>
+    </nav>
+  </div>
+
+  <main class="content" [ngSwitch]="viewMode">
+    <!-- INVENTORY VIEW -->
+    <div *ngSwitchCase="'inventory'">
+      <header class="top-bar">
+        <div class="title-section">
+          <h1>Inventory Overview</h1>
+          <p>Real-time warehouse stock tracking</p>
+        </div>
+        <div class="actions">
+          <button mat-fab extended color="accent" (click)="addNewItem()" style="margin-right: 1rem;">
+            <mat-icon>add</mat-icon>
+            Add Item
+          </button>
+          <button mat-fab extended color="primary" (click)="downloadReport()">
+            <mat-icon>picture_as_pdf</mat-icon>
+            Export Report
+          </button>
+        </div>
+      </header>
+
+      <div class="stats-grid">
+        <div class="stat-card blue">
+          <div class="stat-icon"><mat-icon>shopping_bag</mat-icon></div>
+          <div class="stat-info">
+            <span class="label">Total Products</span>
+            <span class="value">{{dataSource.data.length}}</span>
+          </div>
+        </div>
+        
+        <div class="stat-card orange">
+          <div class="stat-icon"><mat-icon>warning</mat-icon></div>
+          <div class="stat-info">
+            <span class="label">Low Stock Alerts</span>
+            <span class="value">{{getLowStockCount()}}</span>
+          </div>
+        </div>
+
+        <div class="stat-card green">
+          <div class="stat-icon"><mat-icon>check_circle</mat-icon></div>
+          <div class="stat-info">
+            <span class="label">Warehouse Status</span>
+            <span class="value">Active</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-card mat-elevation-z4">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search Inventory</mat-label>
+          <input matInput (keyup)="applyFilter($event)" placeholder="Ex. Processor" #input>
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <table mat-table [dataSource]="dataSource" matSort>
+          <!-- ID Column -->
+          <ng-container matColumnDef="productID">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header> ID </th>
+            <td mat-cell *matCellDef="let row"> {{row.productID}} </td>
+          </ng-container>
+
+          <!-- Name Column -->
+          <ng-container matColumnDef="productName">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header> Product </th>
+            <td mat-cell *matCellDef="let row"> {{row.productName}} </td>
+          </ng-container>
+
+          <!-- Stock Column -->
+          <ng-container matColumnDef="stockQuantity">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header> Quantity </th>
+            <td mat-cell *matCellDef="let row"> 
+              {{row.stockQuantity}}
+              <span *ngIf="row.stockQuantity <= row.reorderLevel" class="badge badge-low">
+                LOW STOCK
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Reorder Level Column -->
+          <ng-container matColumnDef="reorderLevel">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header> Reorder Level </th>
+            <td mat-cell *matCellDef="let row"> {{row.reorderLevel}} </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef> Actions </th>
+            <td mat-cell *matCellDef="let row">
+              <button mat-icon-button color="primary" (click)="restock(row)" matTooltip="Add 10 Units">
+                <mat-icon>add_circle</mat-icon>
+              </button>
+              <button mat-icon-button color="accent" (click)="takeItem(row)" matTooltip="Take 1 Unit">
+                <mat-icon>remove_circle</mat-icon>
+              </button>
+              <button mat-icon-button color="warn" (click)="removeProduct(row)" matTooltip="Delete Product">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" colspan="4">No data matching the filter "{{input.value}}"</td>
+          </tr>
+        </table>
+
+        <mat-paginator [pageSizeOptions]="[5, 10, 25, 100]" aria-label="Select page of products"></mat-paginator>
+      </div>
+    </div>
+
+    <!-- ORDERS VIEW (Dynamic Purchase Orders) -->
+    <div *ngSwitchCase="'orders'">
+      <header class="top-bar">
+        <div class="title-section">
+          <h1>Pending Purchase Orders</h1>
+          <p>Automatic replenishment based on stock levels</p>
+        </div>
+      </header>
+
+      <div class="table-card mat-elevation-z4">
+        <div class="info-banner" *ngIf="getLowStockCount() > 0">
+          <mat-icon>info</mat-icon>
+          <span>You have {{getLowStockCount()}} items that need restocking.</span>
+        </div>
+
+        <table class="simple-table">
+          <thead>
+            <tr>
+              <th>Product</th>
+              <th>Current Stock</th>
+              <th>Target Level</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of getLowStockProducts()">
+              <td>{{item.productName}}</td>
+              <td class="text-warn">{{item.stockQuantity}}</td>
+              <td>{{item.reorderLevel + 20}}</td>
+              <td>
+                <button mat-stroked-button color="primary" (click)="restock(item)">
+                  Confirm Order
+                </button>
+              </td>
+            </tr>
+            <tr *ngIf="getLowStockCount() === 0">
+              <td colspan="4" class="empty-msg">All items are sufficiently stocked!</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SETTINGS VIEW -->
+    <div *ngSwitchCase="'settings'">
+      <header class="top-bar">
+        <div class="title-section">
+          <h1>Account Settings</h1>
+          <p>Manage your profile and system preferences</p>
+        </div>
+      </header>
+
+      <div class="table-card mat-elevation-z4 settings-pane">
+        <div class="setting-item">
+          <div class="setting-text">
+            <h3>User Role</h3>
+            <p>Your current permission level in the warehouse system.</p>
+          </div>
+          <span class="badge">Administrator</span>
+        </div>
+        
+        <div class="setting-item">
+          <div class="setting-text">
+            <h3>Connected Database</h3>
+            <p>SQLite - Local Instance (warehouse.db)</p>
+          </div>
+          <button mat-stroked-button color="warn">Check Status</button>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-text">
+            <h3>Theme Mode</h3>
+            <p>Toggle between Light and Dark visual modes.</p>
+          </div>
+          <mat-icon>light_mode</mat-icon>
+        </div>
+      </div>
+    </div>
+  </main>

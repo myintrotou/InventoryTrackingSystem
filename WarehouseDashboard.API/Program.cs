@@ -1,0 +1,60 @@
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
+using WarehouseDashboard.API.Data;
+using WarehouseDashboard.API.Models;
+using WarehouseDashboard.API.Services;
+using System.Text;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Configuration
+builder.WebHost.UseUrls("http://localhost:5000");
+var keyString = builder.Configuration.GetSection("AppSettings:Token").Value ?? "default_backup_key_for_local_dev_only_32_chars";
+var secretKeyObj = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
+
+// Services
+builder.Services.AddControllers().AddJsonOptions(o => o.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles);
+builder.Services.AddDbContext<WarehouseContext>(o => o.UseSqlite("Data Source=warehouse.db"));
+builder.Services.AddScoped<IPdfReportService, PdfReportService>();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Auth & CORS
+builder.Services.AddCors(o => o.AddPolicy("AllowAngular", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => {
+    o.TokenValidationParameters = new TokenValidationParameters { ValidateIssuerSigningKey = true, IssuerSigningKey = secretKeyObj, ValidateIssuer = false, ValidateAudience = false };
+});
+builder.Services.AddAuthorization();
+
+var app = builder.Build();
+
+// Middleware
+if (app.Environment.IsDevelopment()) { app.UseSwagger(); app.UseSwaggerUI(); }
+app.UseCors("AllowAngular");
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
+
+// Smart Seeder
+using (var scope = app.Services.CreateScope()) {
+    var context = scope.ServiceProvider.GetRequiredService<WarehouseContext>();
+    context.Database.EnsureCreated();
+
+    if (!context.Users.Any()) {
+        context.Users.Add(new User { Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), Role = "Admin" });
+    }
+
+    if (!context.Products.Any()) {
+        context.Products.AddRange(new List<Product> {
+            new Product { ProductName = "Intel Core i9-13900K", StockQuantity = 12, ReorderLevel = 5 },
+            new Product { ProductName = "NVIDIA RTX 4090", StockQuantity = 3, ReorderLevel = 5 },
+            new Product { ProductName = "Samsung 980 Pro 2TB", StockQuantity = 25, ReorderLevel = 10 },
+            new Product { ProductName = "Corsair Vengeance 32GB RAM", StockQuantity = 18, ReorderLevel = 10 },
+            new Product { ProductName = "ASUS ROG Swift Monitor", StockQuantity = 4, ReorderLevel = 5 }
+        });
+    }
+    context.SaveChanges();
+}
+
+app.Run();
