@@ -21,8 +21,11 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Auth & CORS
+var allowedOrigins = builder.Configuration.GetValue<string>("ALLOWED_ORIGINS")?.Split(',') 
+    ?? new[] { "http://localhost:4200", "https://inventory-tracking-system-bykggyajy.vercel.app" };
+
 builder.Services.AddCors(o => o.AddPolicy("AllowAngular", p => p
-    .WithOrigins("http://localhost:4200", "https://inventory-tracking-system-bykggyajy.vercel.app")
+    .WithOrigins(allowedOrigins)
     .AllowAnyMethod()
     .AllowAnyHeader()));
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => {
