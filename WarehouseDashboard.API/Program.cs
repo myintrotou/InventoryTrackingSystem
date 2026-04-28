@@ -21,7 +21,10 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 // Auth & CORS
-builder.Services.AddCors(o => o.AddPolicy("AllowAngular", p => p.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader()));
+builder.Services.AddCors(o => o.AddPolicy("AllowAngular", p => p
+    .WithOrigins("http://localhost:4200", "https://inventory-tracking-system-bykggyajy.vercel.app")
+    .AllowAnyMethod()
+    .AllowAnyHeader()));
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => {
     o.TokenValidationParameters = new TokenValidationParameters { ValidateIssuerSigningKey = true, IssuerSigningKey = secretKeyObj, ValidateIssuer = false, ValidateAudience = false };
 });
