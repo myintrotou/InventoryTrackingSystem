@@ -1,4 +1,4 @@
 export const environment = {
   production: false,
-  apiUrl: 'http://localhost:5000/api'
+  apiUrl: 'https://inventorytrackingsystem-0ya1.onrender.com/api'
 };
