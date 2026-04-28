@@ -9,7 +9,8 @@ using System.Text;
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuration
-builder.WebHost.UseUrls("http://localhost:5000");
+var port = Environment.GetEnvironmentVariable("PORT") ?? "5000";
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 var keyString = builder.Configuration.GetSection("AppSettings:Token").Value ?? "default_backup_key_for_local_dev_only_32_chars";
 var secretKeyObj = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyString));
 
