@@ -23,7 +23,11 @@ builder.Services.AddSwaggerGen();
 
 // Auth & CORS
 var allowedOrigins = builder.Configuration.GetValue<string>("ALLOWED_ORIGINS")?.Split(',') 
-    ?? new[] { "http://localhost:4200", "https://inventory-tracking-system-bykggyajy.vercel.app" };
+    ?? new[] { 
+        "http://localhost:4200", 
+        "https://inventory-tracking-system-bykggyajy.vercel.app",
+        "https://inventory-tracking-system-five.vercel.app"
+    };
 
 builder.Services.AddCors(o => o.AddPolicy("AllowAngular", p => p
     .WithOrigins(allowedOrigins)
