@@ -30,7 +30,7 @@ var allowedOrigins = builder.Configuration.GetValue<string>("ALLOWED_ORIGINS")?.
     };
 
 builder.Services.AddCors(o => o.AddPolicy("AllowAngular", p => p
-    .WithOrigins(allowedOrigins)
+    .AllowAnyOrigin()
     .AllowAnyMethod()
     .AllowAnyHeader()));
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => {
