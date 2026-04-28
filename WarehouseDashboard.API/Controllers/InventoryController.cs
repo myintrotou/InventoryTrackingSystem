@@ -3,9 +3,12 @@ using Microsoft.EntityFrameworkCore;
 using WarehouseDashboard.API.Data;
 using WarehouseDashboard.API.Models;
 using WarehouseDashboard.API.Services;
+using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace WarehouseDashboard.API.Controllers
 {
+    [Authorize]
     [ApiController]
     [Route("api/[controller]")]
     public class InventoryController : ControllerBase
@@ -19,10 +22,18 @@ namespace WarehouseDashboard.API.Controllers
             _pdfService = pdfService;
         }
 
+        private int GetUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            return userIdClaim != null ? int.Parse(userIdClaim.Value) : 0;
+        }
+
         [HttpGet("products")]
         public async Task<ActionResult<IEnumerable<ProductDto>>> GetProducts()
         {
+            var userId = GetUserId();
             return await _context.Products
+                .Where(p => p.UserID == userId)
                 .Include(p => p.Supplier)
                 .Select(p => new ProductDto {
                     ProductID = p.ProductID,
@@ -40,7 +51,8 @@ namespace WarehouseDashboard.API.Controllers
             var product = new Product {
                 ProductName = dto.ProductName,
                 StockQuantity = dto.StockQuantity,
-                ReorderLevel = dto.ReorderLevel
+                ReorderLevel = dto.ReorderLevel,
+                UserID = GetUserId()
             };
             _context.Products.Add(product);
             await _context.SaveChangesAsync();
@@ -50,7 +62,8 @@ namespace WarehouseDashboard.API.Controllers
         [HttpDelete("delete-product/{id}")]
         public async Task<IActionResult> DeleteProduct(int id)
         {
-            var product = await _context.Products.FindAsync(id);
+            var userId = GetUserId();
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == id && p.UserID == userId);
             if (product == null) return NotFound();
 
             _context.Products.Remove(product);
@@ -61,7 +74,8 @@ namespace WarehouseDashboard.API.Controllers
         [HttpPost("add-stock/{id}")]
         public async Task<IActionResult> AddStock(int id, [FromBody] int quantity)
         {
-            var product = await _context.Products.FindAsync(id);
+            var userId = GetUserId();
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == id && p.UserID == userId);
             if (product == null) return NotFound();
 
             product.StockQuantity += quantity;
@@ -72,7 +86,8 @@ namespace WarehouseDashboard.API.Controllers
         [HttpPost("take-stock/{id}")]
         public async Task<IActionResult> TakeStock(int id, [FromBody] int quantity)
         {
-            var product = await _context.Products.FindAsync(id);
+            var userId = GetUserId();
+            var product = await _context.Products.FirstOrDefaultAsync(p => p.ProductID == id && p.UserID == userId);
             if (product == null) return NotFound();
             if (product.StockQuantity < quantity) return BadRequest("Not enough stock.");
 
@@ -84,7 +99,8 @@ namespace WarehouseDashboard.API.Controllers
         [HttpGet("report")]
         public async Task<IActionResult> DownloadReport()
         {
-            var products = await _context.Products.ToListAsync();
+            var userId = GetUserId();
+            var products = await _context.Products.Where(p => p.UserID == userId).ToListAsync();
             var pdfBytes = _pdfService.GenerateStockReport(products);
             return File(pdfBytes, "application/pdf", $"StockReport_{DateTime.Now:yyyyMMdd}.pdf");
         }

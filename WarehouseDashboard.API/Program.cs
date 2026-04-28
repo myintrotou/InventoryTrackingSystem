@@ -50,18 +50,20 @@ using (var scope = app.Services.CreateScope()) {
 
     if (!context.Users.Any()) {
         context.Users.Add(new User { Username = "admin", PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin123"), Role = "Admin" });
+        context.SaveChanges();
     }
 
     if (!context.Products.Any()) {
+        var admin = context.Users.First(u => u.Username == "admin");
         context.Products.AddRange(new List<Product> {
-            new Product { ProductName = "Intel Core i9-13900K", StockQuantity = 12, ReorderLevel = 5 },
-            new Product { ProductName = "NVIDIA RTX 4090", StockQuantity = 3, ReorderLevel = 5 },
-            new Product { ProductName = "Samsung 980 Pro 2TB", StockQuantity = 25, ReorderLevel = 10 },
-            new Product { ProductName = "Corsair Vengeance 32GB RAM", StockQuantity = 18, ReorderLevel = 10 },
-            new Product { ProductName = "ASUS ROG Swift Monitor", StockQuantity = 4, ReorderLevel = 5 }
+            new Product { ProductName = "Intel Core i9-13900K", StockQuantity = 12, ReorderLevel = 5, UserID = admin.UserID },
+            new Product { ProductName = "NVIDIA RTX 4090", StockQuantity = 3, ReorderLevel = 5, UserID = admin.UserID },
+            new Product { ProductName = "Samsung 980 Pro 2TB", StockQuantity = 25, ReorderLevel = 10, UserID = admin.UserID },
+            new Product { ProductName = "Corsair Vengeance 32GB RAM", StockQuantity = 18, ReorderLevel = 10, UserID = admin.UserID },
+            new Product { ProductName = "ASUS ROG Swift Monitor", StockQuantity = 4, ReorderLevel = 5, UserID = admin.UserID }
         });
+        context.SaveChanges();
     }
-    context.SaveChanges();
 }
 
 app.Run();

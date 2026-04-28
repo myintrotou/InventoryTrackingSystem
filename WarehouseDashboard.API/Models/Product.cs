@@ -11,5 +11,6 @@ namespace WarehouseDashboard.API.Models
         public int ReorderLevel { get; set; }
         public int? SupplierID { get; set; }
         public Supplier? Supplier { get; set; }
+        public int UserID { get; set; }
     }
 }

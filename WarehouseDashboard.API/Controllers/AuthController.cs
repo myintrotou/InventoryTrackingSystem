@@ -32,6 +32,18 @@ namespace WarehouseDashboard.API.Controllers
                 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync();
+
+                // Seed mock data for the new user
+                var mockProducts = new List<Product>
+                {
+                    new Product { ProductName = "Sample Gaming Mouse", StockQuantity = 15, ReorderLevel = 5, UserID = user.UserID },
+                    new Product { ProductName = "Mechanical Keyboard", StockQuantity = 8, ReorderLevel = 3, UserID = user.UserID },
+                    new Product { ProductName = "27-inch Monitor", StockQuantity = 4, ReorderLevel = 5, UserID = user.UserID },
+                    new Product { ProductName = "USB-C Hub", StockQuantity = 20, ReorderLevel = 10, UserID = user.UserID },
+                    new Product { ProductName = "LED Desk Lamp", StockQuantity = 12, ReorderLevel = 5, UserID = user.UserID }
+                };
+                _context.Products.AddRange(mockProducts);
+                await _context.SaveChangesAsync();
                 
                 return Ok(user);
             }
@@ -68,6 +80,7 @@ namespace WarehouseDashboard.API.Controllers
         {
             List<Claim> claims = new List<Claim> {
                 new Claim(ClaimTypes.Name, user.Username),
+                new Claim(ClaimTypes.NameIdentifier, user.UserID.ToString()),
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
